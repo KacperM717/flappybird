@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta http-equiv="X-UA-Compatible" content="ie=edge" />
+    <title>Flappy Bird</title>
+    <style>
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0 auto;
+        padding: 0;
+        overflow: hidden;
+        background-color: #f4f4f8;
+        touch-action: manipulation;
+      }
+      canvas {
+        background-color: #fed766;
+      }
+    </style>
+  </head>
+  <body>
+    <canvas id="cnv"></canvas>
+
+    <script>
+      //Drawing Stuff
+      const cnv = document.querySelector("canvas#cnv");
+      var WIDTH = (cnv.width = window.innerWidth);
+      var HEIGHT = (cnv.height = window.innerHeight);
+      const c = cnv.getContext("2d");
+      //Flags
+      var gameRunning = true;
+      //General
+      var playerSize = HEIGHT / 10;
+      var maxGapSize = playerSize * 5;
+      var minGapSize = playerSize * 4;
+
+      //Physics Stuff
+      var G = 1;
+      var wallSpeed = Math.floor(WIDTH / 200);
+      if (wallSpeed < 5) wallSpeed = 5;
+
+      class Bird {
+        constructor(size = playerSize) {
+          this.x = WIDTH / 10;
+          this.y = HEIGHT / 2;
+          this.dx = 0;
+          this.dy = 0;
+          this.ddx = 0;
+          this.ddy = G;
+          this.r = size / 2;
+          this.jumpForce = -20;
+        }
+
+        update() {
+          this.dy += this.ddy;
+          this.dx += this.ddx;
+          this.y += this.dy;
+          this.x += this.dx;
+        }
+
+        draw() {
+          c.beginPath();
+          c.arc(this.x, this.y, this.r, 0, Math.PI * 2);
+          c.fillStyle = "#fe4a49";
+          c.fill();
+        }
+
+        jump() {
+          this.dy = this.jumpForce;
+        }
+      }
+
+      class Wall {
+        constructor(start, end) {
+          this.x = WIDTH;
+          this.width = WIDTH / 20;
+          this.start = start;
+          this.end = end;
+        }
+
+        update() {
+          this.x -= wallSpeed;
+        }
+
+        draw() {
+          c.beginPath();
+          c.fillStyle = "gray";
+          c.rect(this.x, 0, this.width, this.start);
+          c.fill();
+          c.beginPath();
+          c.fillStyle = "#2ab7ca";
+          c.rect(this.x, this.end, this.width, HEIGHT);
+          c.fill();
+        }
+      }
+
+      //Events
+      document.body.addEventListener("keydown", (e) => {
+        switch (e.keyCode) {
+          case 32:
+            if (gameRunning) player.jump();
+            else {
+              pleyr = new Bird();
+              walls = [];
+              gameRunning = true;
+              best = counter;
+              counter = 0;
+              loop();
+            }
+            break;
+
+          default:
+            break;
+        }
+      });
+      document.body.addEventListener("touchstart", (e) => {
+        e.preventDefault();
+        if (gameRunning) player.jump();
+        else {
+          pleyr = new Bird();
+          walls = [];
+          gameRunning = true;
+          if (best < counter) best = counter;
+          counter = 0;
+          loop();
+        }
+      });
+
+      //Game Setup
+      var player = new Bird();
+      var walls = [];
+      var counter = 0;
+      var best = 0;
+
+      //Game Loop
+      function loop() {
+        if (
+          walls.length == 0 ||
+          WIDTH - walls[walls.length - 1].x > player.r * 15
+        ) {
+          if (minGapSize > playerSize * 4)
+            minGapSize = Math.floor(
+              minGapSize - minGapSize * counter * 0.00001
+            );
+          let wallStart = (Math.random() * HEIGHT) / 4 + 50;
+          let wallEnd =
+            wallStart + Math.random() * (maxGapSize - minGapSize) + minGapSize;
+          walls.push(new Wall(wallStart, wallEnd));
+        }
+        if (player.y + player.r > HEIGHT) player.jump();
+
+        if (
+          player.x + player.r >= walls[0].x &&
+          player.x - player.r < walls[0].x + walls[0].width
+        ) {
+          if (
+            player.y - player.r <= walls[0].start ||
+            player.y + player.r >= walls[0].end
+          ) {
+            gameRunning = false;
+            return;
+          }
+        }
+
+        if (walls[0].x + walls[0].width < 0) walls.shift();
+
+        c.clearRect(0, 0, WIDTH, HEIGHT);
+        //Updates
+        player.update();
+        walls.forEach((wall) => {
+          wall.update();
+        });
+
+        //Drawings
+        player.draw();
+        walls.forEach((wall) => {
+          wall.draw();
+        });
+        counter += Math.floor(wallSpeed / 5);
+        c.beginPath();
+        c.fillStyle = "black";
+        c.font = HEIGHT * 0.05 + "px Verdana";
+        c.fillText("Score: " + counter, WIDTH * 0.05, HEIGHT * 0.05);
+        if (best != 0)
+          c.fillText("Best:" + best, WIDTH - WIDTH * 0.4, HEIGHT * 0.05);
+        requestAnimationFrame(loop);
+      }
+
+      loop();
+    </script>
+  </body>
+</html>
